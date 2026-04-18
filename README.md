@@ -69,11 +69,33 @@ Créer une application capable de :
 - Validation des entrées utilisateur
 
 ---
+📚 Bibliothèque avec Interface Graphique (Tkinter)
+
+## 🚀 Fonctionnalités
+
+### 👤 Utilisateurs
+- Inscription avec nom, prénom, email
+- Connexion (login)
+
+### 📚 Livres
+- Affichage des livres
+- Stock disponible
+
+### 📖 Emprunt
+- Emprunt de livres
+- Vérification si utilisateur connecté
+- Messages d’erreur ou de succès
+
+### 🖥️ Interface
+- Interface graphique avec Tkinter
+- Boutons interactifs
+- Fenêtre utilisateur
 
 ## 🛠️ Technologies utilisées
 
 - Python 3
-
+- Tkinter (interface graphique)
+  
 ---
 
 ## 📁 Structure du projet
