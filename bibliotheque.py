@@ -1,72 +1,90 @@
-from utilisateur import Utilisateur
-from livre import Livre
+from datetime import datetime
+
 
 class Bibliotheque:
     def __init__(self):
         self.livres = []
         self.utilisateurs = []
-        self.next_id_user = 1
-        self.utilisateur_connecte = None
+        self.next_id = 1
+        self.next_livre_id = 1
+        self.user_connecte = None
 
-    # 📚 ajouter livre
-    def ajouter_livre(self, livre):
+    def ajouter_livre(self, titre, auteur="", genre="", quantite=5):
+        livre = {
+            "id": self.next_livre_id,
+            "titre": titre,
+            "auteur": auteur,
+            "genre": genre,
+            "quantite": quantite,
+            "quantite_initiale": quantite,
+        }
         self.livres.append(livre)
+        self.next_livre_id += 1
+        return livre
 
-    # 👤 inscription avec email unique
-    def inscrire_utilisateur(self, nom, prenom, email):
-
+    def inscrire(self, nom, prenom, email):
+        if not nom.strip() or not prenom.strip() or not email.strip():
+            return False, "Tous les champs sont obligatoires."
+        if "@" not in email or "." not in email:
+            return False, "Adresse email invalide."
         for u in self.utilisateurs:
-            if u.email == email:
-                print("❌ Email déjà utilisé")
-                return
-
-        user = Utilisateur(self.next_id_user, nom, prenom, email)
+            if u["email"].lower() == email.lower():
+                return False, "Cet email est déjà utilisé."
+        user = {
+            "id": self.next_id,
+            "nom": nom.strip(),
+            "prenom": prenom.strip(),
+            "email": email.strip().lower(),
+            "emprunts": [],
+            "date_inscription": datetime.now().strftime("%d/%m/%Y"),
+        }
         self.utilisateurs.append(user)
+        self.next_id += 1
+        return True, f"Bienvenue, {prenom} !"
 
-        print(f"✅ Inscription réussie ! ID : {user.id}")
-        self.next_id_user += 1
+    def login(self, email):
+        if not email.strip():
+            return False, "Veuillez saisir votre email."
+        for u in self.utilisateurs:
+            if u["email"] == email.strip().lower():
+                self.user_connecte = u
+                return True, f"Bonjour, {u['prenom']} !"
+        return False, "Aucun compte associé à cet email."
 
-    # 🔐 connexion
-    def connexion(self, id_user):
-        user = next((u for u in self.utilisateurs if u.id == id_user), None)
+    def logout(self):
+        self.user_connecte = None
 
-        if user:
-            self.utilisateur_connecte = user
-            print(f"🔓 Connecté : {user.nom} {user.prenom}")
-        else:
-            print("❌ Utilisateur introuvable")
+    def emprunter(self, livre_id):
+        if not self.user_connecte:
+            return "no_user", "Vous devez être connecté pour emprunter."
+        for l in self.livres:
+            if l["id"] == livre_id:
+                if l["quantite"] <= 0:
+                    return "unavailable", f"« {l['titre']} » est indisponible."
+                l["quantite"] -= 1
+                emprunt = {**l, "date_emprunt": datetime.now().strftime("%d/%m/%Y")}
+                self.user_connecte["emprunts"].append(emprunt)
+                return "ok", f"« {l['titre']} » emprunté avec succès !"
+        return "not_found", "Livre introuvable."
 
-    # 🚪 déconnexion
-    def deconnexion(self):
-        if self.utilisateur_connecte:
-            print(f"🔒 Déconnecté : {self.utilisateur_connecte.nom}")
-            self.utilisateur_connecte = None
-        else:
-            print("Aucun utilisateur connecté")
+    def retourner(self, livre_id):
+        if not self.user_connecte:
+            return False, "Non connecté."
+        for emprunt in self.user_connecte["emprunts"]:
+            if emprunt["id"] == livre_id:
+                self.user_connecte["emprunts"].remove(emprunt)
+                for l in self.livres:
+                    if l["id"] == livre_id:
+                        l["quantite"] += 1
+                return True, f"« {emprunt['titre']} » retourné. Merci !"
+        return False, "Ce livre ne figure pas dans vos emprunts."
 
-    # 📖 afficher livres
-    def afficher_livres(self):
-        for livre in self.livres:
-            print(livre)
-
-    # 📚 emprunter livre (avec session)
-    def emprunter_livre(self, id_livre):
-
-        if not self.utilisateur_connecte:
-            print("⚠️ Vous devez vous connecter d'abord")
-            return
-
-        livre = next((l for l in self.livres if l.id == id_livre), None)
-
-        if not livre:
-            print("❌ Livre introuvable")
-            return
-
-        if livre.quantite <= 0:
-            print("❌ Livre indisponible")
-            return
-
-        livre.quantite -= 1
-        self.utilisateur_connecte.livres_empruntes.append(livre)
-
-        print("📚 Emprunt réussi")
+    def stats(self):
+        total_livres = sum(l["quantite_initiale"] for l in self.livres)
+        empruntes = sum(l["quantite_initiale"] - l["quantite"] for l in self.livres)
+        return {
+            "total_titres": len(self.livres),
+            "total_exemplaires": total_livres,
+            "empruntes": empruntes,
+            "membres": len(self.utilisateurs),
+        }
